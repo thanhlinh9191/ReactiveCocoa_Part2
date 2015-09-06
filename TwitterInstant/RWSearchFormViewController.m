@@ -60,27 +60,26 @@ static NSString * const RWTwitterInstantDomain = @"TwitterInstant";
       self.searchText.backgroundColor = color;
   }];
  
-    //After a completed or error event, a subscription removes itself automatically
-    //we can remove subscription mannually by below code
-    /*RACSignal *backgroundColorSignal =
-    [self.searchText.rac_textSignal
-     map:^id(NSString *text) {
-         return [self isValidSearchText:text] ?
-         [UIColor whiteColor] : [UIColor yellowColor];
-     }];
+    //B1. get access to twitter account
+//    [[self requestAccessToTwitterSignal]
+//     subscribeNext:^(id x) {
+//         NSLog(@"Access granted");
+//     } error:^(NSError *error) {
+//         NSLog(@"An error occurred: %@", error);
+//     }];
     
-    RACDisposable *subscription =
-    [backgroundColorSignal
-     subscribeNext:^(UIColor *color) {
-         self.searchText.backgroundColor = color;
-     }];
-
-    [subscription dispose];*/
-    
-    //get access to twitter account
-    [[self requestAccessToTwitterSignal]
+    //B2. Chaining signals 
+    [[[[self requestAccessToTwitterSignal]
+       then:^RACSignal *{
+           @strongify(self)
+           return self.searchText.rac_textSignal;
+       }]
+      filter:^BOOL(NSString *text) {
+          @strongify(self)
+          return [self isValidSearchText:text];
+      }]
      subscribeNext:^(id x) {
-         NSLog(@"Access granted");
+         NSLog(@"%@", x);
      } error:^(NSError *error) {
          NSLog(@"An error occurred: %@", error);
      }];
