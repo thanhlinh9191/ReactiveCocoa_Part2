@@ -85,19 +85,40 @@ static NSString * const RWTwitterInstantDomain = @"TwitterInstant";
 //     }];
   
     //B3. signal for text search
-    [[[[[self requestAccessToTwitterSignal]
-        then:^RACSignal *{
+//    [[[[[self requestAccessToTwitterSignal]
+//        then:^RACSignal *{
+//            @strongify(self)
+//            return self.searchText.rac_textSignal;
+//        }]
+//       filter:^BOOL(NSString *text) {
+//           @strongify(self)
+//           return [self isValidSearchText:text];
+//       }]
+//      flattenMap:^RACStream *(NSString *text) {
+//          @strongify(self)
+//          return [self signalForSearchWithText:text];
+//      }]
+//     subscribeNext:^(id x) {
+//         NSLog(@"%@", x);
+//     } error:^(NSError *error) {
+//         NSLog(@"An error occurred: %@", error);
+//     }];
+    
+    //B4. Diliver on main thread
+    [[[[[[self requestAccessToTwitterSignal]
+         then:^RACSignal *{
+             @strongify(self)
+             return self.searchText.rac_textSignal;
+         }]
+        filter:^BOOL(NSString *text) {
             @strongify(self)
-            return self.searchText.rac_textSignal;
+            return [self isValidSearchText:text];
         }]
-       filter:^BOOL(NSString *text) {
+       flattenMap:^RACStream *(NSString *text) {
            @strongify(self)
-           return [self isValidSearchText:text];
+           return [self signalForSearchWithText:text];
        }]
-      flattenMap:^RACStream *(NSString *text) {
-          @strongify(self)
-          return [self signalForSearchWithText:text];
-      }]
+      deliverOn:[RACScheduler mainThreadScheduler]]
      subscribeNext:^(id x) {
          NSLog(@"%@", x);
      } error:^(NSError *error) {
