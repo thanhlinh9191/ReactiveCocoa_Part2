@@ -107,30 +107,57 @@ static NSString * const RWTwitterInstantDomain = @"TwitterInstant";
 //     }];
     
     //B4. Diliver on main thread
-    [[[[[[self requestAccessToTwitterSignal]
-         then:^RACSignal *{
+//    [[[[[[self requestAccessToTwitterSignal]
+//         then:^RACSignal *{
+//             @strongify(self)
+//             return self.searchText.rac_textSignal;
+//         }]
+//        filter:^BOOL(NSString *text) {
+//            @strongify(self)
+//            return [self isValidSearchText:text];
+//        }]
+//       flattenMap:^RACStream *(NSString *text) {
+//           @strongify(self)
+//           return [self signalForSearchWithText:text];
+//       }]
+//      deliverOn:[RACScheduler mainThreadScheduler]]
+//     subscribeNext:^(NSDictionary *jsonSearchResult) {
+//         //NSLog(@"%@", x);
+//         
+//         //B5 : DISPLAY TWEETS
+//         NSArray *statuses = jsonSearchResult[@"statuses"];
+//         NSArray *tweets = [statuses linq_select:^id(id tweet) {
+//             return [RWTweet tweetWithStatus:tweet];
+//         }];
+//         [self.resultsViewController displayTweets:tweets];
+//         
+//     } error:^(NSError *error) {
+//         NSLog(@"An error occurred: %@", error);
+//     }];
+    
+    //B7 : THROTTLING
+    [[[[[[[self requestAccessToTwitterSignal]
+          then:^RACSignal *{
+              @strongify(self)
+              return self.searchText.rac_textSignal;
+          }]
+         filter:^BOOL(NSString *text) {
              @strongify(self)
-             return self.searchText.rac_textSignal;
+             return [self isValidSearchText:text];
          }]
-        filter:^BOOL(NSString *text) {
-            @strongify(self)
-            return [self isValidSearchText:text];
-        }]
+        //perform a search only if the search text is unchanged for a short amount of time, say 500 milliseconds.
+        throttle:0.5]
        flattenMap:^RACStream *(NSString *text) {
            @strongify(self)
            return [self signalForSearchWithText:text];
        }]
       deliverOn:[RACScheduler mainThreadScheduler]]
      subscribeNext:^(NSDictionary *jsonSearchResult) {
-         //NSLog(@"%@", x);
-         
-         //B5 : DISPLAY TWEETS
          NSArray *statuses = jsonSearchResult[@"statuses"];
          NSArray *tweets = [statuses linq_select:^id(id tweet) {
              return [RWTweet tweetWithStatus:tweet];
          }];
          [self.resultsViewController displayTweets:tweets];
-         
      } error:^(NSError *error) {
          NSLog(@"An error occurred: %@", error);
      }];
